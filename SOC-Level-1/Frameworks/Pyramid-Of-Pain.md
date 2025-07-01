@@ -5,13 +5,13 @@
 - Platform: TryHackMe
 
 ## My Understanding
-Pyramid of Pain ek attacker framework hai jo batata hai ki defenders attackers ko kitna dard de sakte hain, depending on kaunse indicators wo block karte hain. Is pyramid mein low se high levels tak indicators arranged hote hain — jaise:
+The Pyramid of Pain is a framework that explains how defenders can cause difficulties for attackers, depending on which indicators they detect and block. The pyramid is organized from low to high levels:
 
-Lowest level → Hashes, IP addresses — jo attackers aasani se change kar sakte hain.
+At the lowest level are things like hashes and IP addresses, which attackers can easily change.
 
-Higher levels → Tactics, Techniques, aur Procedures (TTPs) — inhe change karna attackers ke liye bahut mushkil aur costly hota hai.
+At the higher levels are Tactics, Techniques, and Procedures (TTPs), which are much harder and more costly for attackers to modify.
 
-Jaise-jaise defender pyramid ke higher level pe block karta hai, attacker ka pain badhta rehta hai, kyunki unhe poori strategy badalni padti hai, na ki sirf IP ya hash replace karna.
+As defenders block higher levels in the pyramid, it increases the attacker’s pain, because they have to change their entire strategy instead of just switching an IP or hash.
 
 ## The 6 Levels of the Pyramid
 
