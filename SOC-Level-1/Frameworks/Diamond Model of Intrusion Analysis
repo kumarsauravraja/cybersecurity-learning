@@ -1,0 +1,155 @@
+# Diamond Model of Intrusion Analysis (TryHackMe)
+
+> **Room:** Diamond Model  
+> **Platform:** TryHackMe  
+> **Difficulty:** Easy (~35 min)
+
+---
+
+## 📚 Introduction
+
+The Diamond Model of Intrusion Analysis was developed in 2013 by:
+
+- Sergio Caltagirone
+- Andrew Pendergast
+- Christopher Betz
+
+It defines any intrusion as an event connecting four core features in a diamond shape:
+
+- **Adversary**
+- **Infrastructure**
+- **Capability**
+- **Victim**
+
+Two additional axes enhance the analysis:
+
+- **Social-Political Component**
+- **Technology Component**
+
+✅ **Why learn it?**
+
+- Understand how intrusions happen
+- Explain incidents clearly, even to non-technical people
+- Correlate events to adversary campaigns
+- Predict adversary actions
+- Create actionable threat intelligence
+
+---
+
+## 🔎 Task 2 - Adversary
+
+- The adversary is the hacker, threat actor, or group behind the attack.
+- Responsible for using a capability against the victim.
+- Types:
+  - **Adversary Operator:** Executes the attack.
+  - **Adversary Customer:** Gains the benefit from the attack.
+
+---
+
+## 🎯 Task 3 - Victim
+
+- The victim is the adversary’s target.
+- Could be:
+  - Individual or organization
+  - Email, IP, domain
+- Two parts:
+  - **Victim Personae:** Who is targeted (e.g. company name, role).
+  - **Victim Assets:** The systems/accounts being attacked.
+
+
+## ⚔️ Task 4 - Capability
+
+- Tools, skills, and techniques used in the attack.
+- Examples:
+  - Malware
+  - Phishing kits
+  - Exploits
+- Related terms:
+  - **Capability Capacity:** Vulnerabilities exploited by a capability.
+  - **Adversary Arsenal:** Complete set of capabilities an adversary possesses.
+---
+
+## 🛠️ Task 5 - Infrastructure
+
+- Physical or logical systems used by adversaries to:
+  - Deliver capabilities
+  - Maintain control
+- Examples:
+  - C2 servers
+  - IP addresses
+  - Malicious domains
+  - Compromised email accounts
+  - Malicious USBs
+- Types:
+  - **Type 1:** Directly owned by the adversary.
+  - **Type 2:** Operated through intermediaries, often unknowingly, to hide attribution.
+
+
+## ⏲️ Task 6 - Event Meta Features
+
+Optional features enriching Diamond Model analysis:
+
+- **Timestamp:** Date/time of the event.
+- **Phase:** Stages of an attack (e.g. Kill Chain).
+- **Result:** Whether the attack succeeded, failed, or is unknown.
+- **Direction:** Data flow (e.g. Infra → Victim).
+- **Methodology:** Type of attack (e.g. phishing, DDoS).
+- **Resources:** What the attack needs (e.g. malware, funds, servers).
+
+
+## 🌍 Task 7 - Social-Political Component
+
+- Describes **why** the adversary acts:
+  - Financial gain
+  - Hacktivism
+  - Espionage
+  - Reputation in hacker communities
+
+Example:
+
+> Using a victim’s computer for cryptomining, generating financial profit for the adversary.
+
+---
+
+## 🖥️ Task 8 - Technology Component
+
+- Connects **Capability** and **Infrastructure.**
+- Describes how an attack is technically executed.
+
+Example:
+
+> A watering-hole attack where adversaries compromise a website likely visited by their targets.
+
+---
+
+## 📝 Task 9 - Practice Analysis
+
+- Complete the Diamond Model via a static web exercise in TryHackMe.
+- Involves populating all 8 sections for a real-world case.
+
+
+## ✅ Task 10 - Conclusion
+
+- The Diamond Model:
+  - Scientifically structures intrusion analysis
+  - Improves threat intelligence workflows
+  - Supports proactive defense
+  - Helps communicate threats clearly to non-technical audiences
+
+---
+
+## ⭐ Benefits of Diamond Model
+
+- Maps **who → what → how → where** in attacks.
+- Supports:
+  - Incident response
+  - Threat intelligence
+  - Executive reporting
+
+---
+
+## 📚 References
+
+- [TryHackMe Room - Diamond Model](https://tryhackme.com/room/diamondmodel)
+- Caltagirone et al., Diamond Model of Intrusion Analysis (2013)
+
