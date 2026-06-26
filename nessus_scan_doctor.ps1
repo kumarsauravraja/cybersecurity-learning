@@ -1,7 +1,7 @@
 #Requires -RunAsAdministrator
 <#
-    Nessus Credentialed Scan Preparation & Diagnostic Tool
-    Verifies and remediates the conditions behind credential-failure plugins:
+    Nessus Credentialed Scan Preparation and Diagnostic Tool
+    Verifies and remediates conditions behind credential-failure plugins:
       104410  Target Credential Status - Failure for Provided Credentials
       24786   Nessus Windows Scan Not Performed with Admin Privileges
       26917   Cannot Access the Windows Registry
@@ -11,8 +11,8 @@
 
 param(
     [string]$ScanCredUser = "Administrator",
-    [string]$ExpectedPassword = "",      # pass the password your Nessus policy uses, to verify it matches
-    [switch]$Remediate,                  # without this flag the tool only diagnoses (passive)
+    [string]$ExpectedPassword = "",
+    [switch]$Remediate,
     [string]$ReportPath = "$env:TEMP\nessus_prep_report.txt"
 )
 
@@ -23,7 +23,7 @@ function Add-Result {
     param([string]$Check, [string]$Status, [string]$Detail, [string]$Fix = "")
     $results.Add([pscustomobject]@{
         Check  = $Check
-        Status = $Status      # PASS / FAIL / WARN / FIXED
+        Status = $Status
         Detail = $Detail
         Fix    = $Fix
     })
@@ -58,11 +58,10 @@ function Get-RegistryValue {
 }
 
 Write-Host "`n=== Nessus Credentialed Scan Diagnostic ===" -ForegroundColor White
-Write-Host ("Mode: {0}`n" -f $(if ($Remediate) { "REMEDIATE" } else { "DIAGNOSE ONLY (use -Remediate to apply fixes)" })) -ForegroundColor DarkGray
+$modeText = if ($Remediate) { "REMEDIATE" } else { "DIAGNOSE ONLY (use -Remediate to apply fixes)" }
+Write-Host ("Mode: {0}`n" -f $modeText) -ForegroundColor DarkGray
 
-# ---------------------------------------------------------------------------
-# 1. Account state — the thing your batch file failed silently on
-# ---------------------------------------------------------------------------
+# 1. Account state
 $acct = $null
 try { $acct = Get-LocalUser -Name $ScanCredUser -ErrorAction Stop } catch {}
 
@@ -78,7 +77,6 @@ if ($null -eq $acct) {
         Add-Result "Account enabled" "FAIL" "$ScanCredUser is DISABLED" "Run with -Remediate or: Enable-LocalUser $ScanCredUser"
     }
 
-    # Password-set verification — this is what 'net user x pass' hides on failure
     if ($ExpectedPassword) {
         Add-Type -AssemblyName System.DirectoryServices.AccountManagement
         $ctx = [System.DirectoryServices.AccountManagement.PrincipalContext]::new('Machine')
@@ -93,7 +91,7 @@ if ($null -eq $acct) {
                 if ($valid2) {
                     Add-Result "Password matches scan policy" "FIXED" "Password set and verified"
                 } else {
-                    Add-Result "Password matches scan policy" "FAIL" "Set call ran but auth still fails — password policy may reject it" "Check Local Security Policy > Password Complexity"
+                    Add-Result "Password matches scan policy" "FAIL" "Set call ran but auth still fails - password policy may reject it" "Check Local Security Policy, Password Complexity"
                 }
             } catch {
                 Add-Result "Password matches scan policy" "FAIL" "Set-LocalUser rejected the password" "Likely complexity policy. This is why the batch failed silently."
@@ -107,13 +105,11 @@ if ($null -eq $acct) {
     }
 }
 
-# ---------------------------------------------------------------------------
-# 2. Required services — verified running, not fire-and-forget
-# ---------------------------------------------------------------------------
+# 2. Required services
 $requiredServices = @{
     "RemoteRegistry" = "Registry checks (plugins 26917, 35705)"
     "Winmgmt"        = "WMI-based local checks"
-    "LanmanServer"   = "SMB / admin share access"
+    "LanmanServer"   = "SMB and admin share access"
 }
 
 foreach ($svcName in $requiredServices.Keys) {
@@ -127,7 +123,6 @@ foreach ($svcName in $requiredServices.Keys) {
     } elseif ($Remediate) {
         Set-Service -Name $svcName -StartupType Automatic
         Start-Service -Name $svcName -ErrorAction SilentlyContinue
-        $svc.Refresh()
         if ((Get-Service $svcName).Status -eq "Running") {
             Add-Result "Service: $svcName" "FIXED" "Started and set to Automatic"
         } else {
@@ -138,13 +133,11 @@ foreach ($svcName in $requiredServices.Keys) {
     }
 }
 
-# ---------------------------------------------------------------------------
-# 3. The registry conditions your batch set blindly — now verified
-# ---------------------------------------------------------------------------
+# 3. Registry conditions
 $regChecks = @(
-    @{ Name="LocalAccountTokenFilterPolicy"; Path="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"; Expected=1; Type="DWord"; Why="UAC remote token filtering — blocks local-admin auth over network if unset" },
-    @{ Name="AutoShareWks"; Path="HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"; Expected=1; Type="DWord"; Why="Admin shares (ADMIN$, C$) for registry/file checks" },
-    @{ Name="RestrictAnonymous"; Path="HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Expected=0; Type="DWord"; Why="Anonymous restriction — too high breaks SMB negotiation" }
+    @{ Name="LocalAccountTokenFilterPolicy"; Path="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"; Expected=1; Type="DWord"; Why="UAC remote token filtering - blocks local-admin auth over network if unset" },
+    @{ Name="AutoShareWks"; Path="HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"; Expected=1; Type="DWord"; Why="Admin shares for registry and file checks" },
+    @{ Name="RestrictAnonymous"; Path="HKLM:\SYSTEM\CurrentControlSet\Control\Lsa"; Expected=0; Type="DWord"; Why="Anonymous restriction - too high breaks SMB negotiation" }
 )
 
 foreach ($rc in $regChecks) {
@@ -162,19 +155,15 @@ foreach ($rc in $regChecks) {
     }
 }
 
-# ---------------------------------------------------------------------------
-# 4. SMB signing — the cause your batch never touched (top reason 104410 persists)
-# ---------------------------------------------------------------------------
+# 4. SMB signing
 $smbSign = Get-RegistryValue -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" -Name "RequireSecuritySignature"
 if ($smbSign -eq 1) {
-    Add-Result "SMB signing requirement" "WARN" "RequireSecuritySignature=1 — can break older Nessus SMB auth" "Set to 0 only if scan policy can't negotiate signing"
+    Add-Result "SMB signing requirement" "WARN" "RequireSecuritySignature=1 - can break older Nessus SMB auth" "Set to 0 only if scan policy cannot negotiate signing"
 } else {
     Add-Result "SMB signing requirement" "PASS" "Not forcing signature (=$smbSign)"
 }
 
-# ---------------------------------------------------------------------------
-# 5. Firewall groups Nessus relies on
-# ---------------------------------------------------------------------------
+# 5. Firewall groups
 $fwGroups = @("File and Printer Sharing", "Windows Management Instrumentation (WMI)", "Remote Service Management")
 foreach ($grp in $fwGroups) {
     $rules = Get-NetFirewallRule -ErrorAction SilentlyContinue | Where-Object { $_.DisplayGroup -eq $grp -and $_.Direction -eq "Inbound" }
@@ -193,9 +182,7 @@ foreach ($grp in $fwGroups) {
     }
 }
 
-# ---------------------------------------------------------------------------
-# 6. Live SMB reachability self-test — proves the auth path actually works
-# ---------------------------------------------------------------------------
+# 6. Live SMB reachability self-test
 try {
     $smbTest = Test-NetConnection -ComputerName "localhost" -Port 445 -WarningAction SilentlyContinue
     if ($smbTest.TcpTestSucceeded) {
@@ -207,26 +194,24 @@ try {
     Add-Result "SMB port 445 listening" "WARN" "Test-NetConnection unavailable on this build"
 }
 
-# DCOM reboot flag — your batch's EnableDCOM needs a restart to take effect
 $dcom = Get-RegistryValue -Path "HKLM:\SOFTWARE\Microsoft\Ole" -Name "EnableDCOM"
 if ($dcom -eq "Y") {
     Add-Result "DCOM enabled" "PASS" "EnableDCOM=Y (reboot if just changed)"
 } elseif ($Remediate) {
     Set-RegistryValue -Path "HKLM:\SOFTWARE\Microsoft\Ole" -Name "EnableDCOM" -Value "Y" -Type "String" | Out-Null
-    Add-Result "DCOM enabled" "FIXED" "Set EnableDCOM=Y — REBOOT REQUIRED before rescan"
+    Add-Result "DCOM enabled" "FIXED" "Set EnableDCOM=Y - REBOOT REQUIRED before rescan"
 } else {
     Add-Result "DCOM enabled" "FAIL" "EnableDCOM=$dcom" "Run -Remediate, then reboot"
 }
 
-# ---------------------------------------------------------------------------
 # Report
-# ---------------------------------------------------------------------------
 $fails = ($results | Where-Object Status -eq "FAIL").Count
 $fixed = ($results | Where-Object Status -eq "FIXED").Count
 $warns = ($results | Where-Object Status -eq "WARN").Count
 
 Write-Host "`n=== Summary ===" -ForegroundColor White
-Write-Host ("PASS/FIXED clean, {0} FIXED, {1} WARN, {2} FAIL" -f $fixed, $warns, $fails) -ForegroundColor $(if ($fails) {"Red"} else {"Green"})
+$summaryColor = if ($fails) { "Red" } else { "Green" }
+Write-Host ("{0} FIXED, {1} WARN, {2} FAIL" -f $fixed, $warns, $fails) -ForegroundColor $summaryColor
 
 $report = @()
 $report += "Nessus Credentialed Scan Diagnostic Report"
@@ -244,4 +229,4 @@ if ($fixed -gt 0) { $report += "NOTE: If DCOM or service states changed, REBOOT 
 $report | Set-Content -Path $ReportPath -Encoding UTF8
 
 Write-Host "`nReport written to: $ReportPath" -ForegroundColor Cyan
-Write-Host "Next: re-run the Nessus credentialed scan. If 104410 persists, read the plugin Output section for the exact protocol + error.`n" -ForegroundColor DarkGray
+Write-Host "Next: re-run the Nessus credentialed scan. If 104410 persists, read the plugin Output section for the exact protocol and error.`n" -ForegroundColor DarkGray
